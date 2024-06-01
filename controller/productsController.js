@@ -39,6 +39,35 @@ const addProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
   try {
+    const product = await db.query("SELECT * FROM products WHERE id = $1", [
+      parseInt(req.params.id),
+    ]);
+
+    if (product.rows.length === 0) {
+      return res.status(404).send("Product not found!");
+    }
+
+    const name = req.body.name || product.rows[0].name;
+    const description = req.body.description || product.rows[0].description;
+    const price = req.body.price || product.rows[0].price;
+    const quantity = req.body.quantity || product.rows[0].quantity;
+
+    const query = `
+        UPDATE products
+        SET name = $1, description = $2, price = $3, quantity = $4
+        WHERE id = $5
+        RETURNING *;
+    `;
+
+    const result = await db.query(query, [
+      name,
+      description,
+      price,
+      quantity,
+      parseInt(req.params.id),
+    ]);
+
+    res.send(result.rows[0]);
   } catch (error) {
     console.error("Error updating product:", error);
     res.status(500).send("Internal Server Error");
